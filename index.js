@@ -4,6 +4,9 @@ const esprima = require('esprima');
 const estraverse = require('estraverse');
 const escodegen = require('escodegen');
 
+const acorn = require("acorn")
+const acornParser=acorn.Parser
+
 function createBaseAST() {
   const ast = {};
   ast.type = 'Program';
@@ -203,8 +206,13 @@ function createGlobalAssignmentASTNode(functionName) {
   return node;
 }
 
-exports.generate = function(source, options = { comment: false, autoGlobalExports: false }){
-  const ast = esprima.parseModule(source, { attachComment: options.comment });
+// type parser = 'esprima' | 'acorn'
+
+exports.generate = function(source, options = { comment: false, autoGlobalExports: false, parser: 'esprima' }){
+  const ast = options.parser === 'acorn' ?
+    acornParser.parse(source, { ecmaVersion: 2020, trackComments:true,allowImportExportEverywhere:true }) :
+    esprima.parseModule(source, { attachComment: options.comment }) 
+
   const functions = generateStubs(ast, options);
   const globalAssignments = options.autoGlobalExports ? generateGlobalAssignments(ast, options) : undefined;
   return {
